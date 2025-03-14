@@ -33,7 +33,7 @@ class UserCreate(UserBase):
     )
     
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "email": "user@example.com",
                 "username": "john_doe123",
@@ -49,7 +49,7 @@ class UserResponse(UserBase):
     
     class Config:
         orm_mode = True
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "id": 1,
                 "email": "user@example.com",
@@ -65,7 +65,7 @@ class Token(BaseModel):
     token_type: str = Field(..., description="Token type (usually 'bearer')")
     
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
                 "token_type": "bearer"
