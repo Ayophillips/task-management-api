@@ -8,7 +8,7 @@ engine = create_engine(settings.DATABASE_URL)
 
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
-    logger.info("Database tables created successfully")
+    logger.info("Database tables created/verified successfully")
 
 def get_session():
     with Session(engine) as session:
