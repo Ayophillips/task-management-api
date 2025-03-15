@@ -1,12 +1,13 @@
 import logging
 from app.core.logging import setup_logging
-from fastapi import FastAPI, Depends, Request
+from fastapi import FastAPI, Depends, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from fastapi.exceptions import RequestValidationError, HTTPException
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlmodel import Session, select
 
-from app.database import create_db_and_tables
+from app.database import create_db_and_tables, get_session
 from app.api import auth, tasks
 from app.config import settings
 from app.core.errors import ErrorHandlers
@@ -62,6 +63,32 @@ app.openapi = custom_openapi
 @app.get("/")
 def read_root():
     return {"message": "Welcome to the Task Management API", "version": settings.PROJECT_VERSION}
+
+@app.get("/health", tags=["Health"])
+async def health_check(session: Session = Depends(get_session)):
+    """
+    Check the health of the application and its dependencies.
+    Returns:
+        dict: Health check results including database status and app version
+    """
+    try:
+        # Test database connection
+        session.exec(select(1)).first()
+        db_status = "healthy"
+    except Exception as e:
+        logger.error(f"Database health check failed: {str(e)}")
+        db_status = "unhealthy"
+        return {
+            "status": "unhealthy",
+            "database": db_status,
+            "version": settings.PROJECT_VERSION
+        }, status.HTTP_503_SERVICE_UNAVAILABLE
+
+    return {
+        "status": "healthy",
+        "database": db_status,
+        "version": settings.PROJECT_VERSION
+    }
 
 if __name__ == "__main__":
     import uvicorn # type: ignore
