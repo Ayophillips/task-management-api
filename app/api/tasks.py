@@ -15,16 +15,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
-@router.exception_handler(Exception)
-async def task_exception_handler(request, exc):
-    logger.error(f"Error in tasks API: {str(exc)}", exc_info=True)
-    if isinstance(exc, HTTPException):
-        raise exc
-    raise HTTPException(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail="An unexpected error occurred"
-    )
-
 @router.post("/", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
 def create_task(
     task: TaskCreate,
