@@ -1,6 +1,7 @@
 import logging
 from app.core.logging import setup_logging
 from fastapi import FastAPI, Depends, Request, status
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from fastapi.exceptions import RequestValidationError, HTTPException
@@ -15,7 +16,19 @@ from contextlib import asynccontextmanager
 
 logger = setup_logging()
 
-app = FastAPI(title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("Starting up application")
+    try:
+        create_db_and_tables()
+        logger.info("Database tables created successfully")
+    except Exception as e:
+        logger.error(f"Failed to create database tables: {str(e)}")
+        # Don't raise the exception - allow app to start even if tables exist
+    yield
+    logger.info("Shutting down application")
+
+app = FastAPI(title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION, lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -34,14 +47,6 @@ app.add_exception_handler(IntegrityError, ErrorHandlers.integrity_error_handler)
 app.add_exception_handler(Exception, ErrorHandlers.global_exception_handler)
 app.add_exception_handler(HTTPException, ErrorHandlers.http_exception_handler)
 app.add_exception_handler(SQLAlchemyError, ErrorHandlers.sqlalchemy_error_handler)
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    logger.info("Starting up application")
-    create_db_and_tables()
-    logger.info("Database tables created")
-    yield
-    logger.info("Shutting down application")
 
 # Custom OpenAPI schema to improve documentation
 def custom_openapi():
@@ -64,31 +69,41 @@ app.openapi = custom_openapi
 def read_root():
     return {"message": "Welcome to the Task Management API", "version": settings.PROJECT_VERSION}
 
-@app.get("/health", tags=["Health"])
+@app.get("/health", tags=["Health"], status_code=status.HTTP_200_OK)
 async def health_check(session: Session = Depends(get_session)):
     """
     Check the health of the application and its dependencies.
     Returns:
         dict: Health check results including database status and app version
     """
+    health_status = {
+        "status": "healthy",
+        "version": settings.PROJECT_VERSION,
+        "database": {
+            "status": "healthy",
+            "error": None
+        }
+    }
+
     try:
         # Test database connection
         session.exec(select(1)).first()
-        db_status = "healthy"
     except Exception as e:
-        logger.error(f"Database health check failed: {str(e)}")
-        db_status = "unhealthy"
-        return {
+        error_message = str(e)
+        logger.error(f"Database health check failed: {error_message}")
+        health_status.update({
             "status": "unhealthy",
-            "database": db_status,
-            "version": settings.PROJECT_VERSION
-        }, status.HTTP_503_SERVICE_UNAVAILABLE
+            "database": {
+                "status": "unhealthy",
+                "error": error_message
+            }
+        })
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content=health_status
+        )
 
-    return {
-        "status": "healthy",
-        "database": db_status,
-        "version": settings.PROJECT_VERSION
-    }
+    return health_status
 
 if __name__ == "__main__":
     import uvicorn # type: ignore
