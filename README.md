@@ -8,7 +8,7 @@ A RESTful API for a Task Management System built with FastAPI and SQLModel.
 - CRUD operations for tasks
 - Input validation
 - Error handling
-- Database integration with PostgreSQL
+- Database ation with PostgreSQL
 - API documentation with Swagger
 
 ## Tech Stack
@@ -44,15 +44,12 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-4. Create a `.env` file in the root directory with the following variables:
-```
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=your_password
-POSTGRES_SERVER=localhost
-POSTGRES_PORT=5432
-POSTGRES_DB=task_management
-SECRET_KEY=your_secret_key_here
-```
+4. a. Copy the environment template:
+   ```bash
+   cp .env.example .env
+   ```
+   b. Update the `.env` file with your local settings
+
 
 5. Start the application:
 ```

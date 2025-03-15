@@ -12,8 +12,8 @@ class TaskBase(BaseModel):
         title: Task title (1-100 characters)
         description: Optional task description
         due_date: When the task is due
-        priority: Task priority level (default: MEDIUM)
-        status: Current task status (default: PENDING)
+        priority: Task priority level (default: Medium)
+        status: Current task status (default: Pending)
     """
         
     title: str = Field(..., min_length=1, max_length=100)

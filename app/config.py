@@ -18,5 +18,11 @@ class Settings:
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
+    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
+    LOG_FORMAT: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    LOG_FILE: str = "logs/app.log"
+    LOG_MAX_SIZE: int = 10 * 1024 * 1024  # 10 MB
+    LOG_BACKUP_COUNT: int = 5
+
 settings = Settings()
 

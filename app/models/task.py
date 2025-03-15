@@ -6,9 +6,11 @@ from app.models.enums import PriorityEnum, StatusEnum
 
 class Task(SQLModel, table=True):
     __tablename__ = "tasks"
-    
+    __table_args__ = (
+        {"UniqueConstraint": ["title", "user_id"], "name": "uq_task_title_user_id"},
+    )
     id: Optional[int] = Field(default=None, primary_key=True)
-    title: str = Field(index=True)
+    title: str = Field(index=True, description="Task title - must be unique per user")
     description: Optional[str] = Field(default=None)
     due_date: date
     priority: PriorityEnum = Field(default=PriorityEnum.MEDIUM)
