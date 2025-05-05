@@ -2,6 +2,20 @@ from pydantic import BaseModel, EmailStr, Field, constr
 from typing import Optional, Pattern
 from datetime import datetime
 
+class PyObjectId(ObjectId):
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, v):
+        if not ObjectId.is_valid(v):
+            raise ValueError("Invalid ObjectId")
+        return ObjectId(v)
+
+    @classmethod
+    def __modify_schema__(cls, field_schema):
+        field_schema.update(type="string")
 
 class UserBase(BaseModel):
     """
@@ -43,10 +57,27 @@ class UserCreate(UserBase):
 
 class UserResponse(UserBase):
     """Model for user data responses."""
+    # id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
+    # is_active: bool = Field(default=True)
     id: int = Field(..., description="Unique user identifier")
     is_active: bool = Field(..., description="User account status")
     created_at: datetime = Field(..., description="Account creation timestamp")
     
+    # class Config:
+    #     json_encoders = {
+    #         ObjectId: str
+    #     }
+    #     allow_population_by_field_name = True
+    #     schema_extra = {
+    #         "example": {
+    #             "_id": "507f1f77bcf86cd799439011",
+    #             "email": "user@example.com",
+    #             "username": "john_doe123",
+    #             "is_active": True,
+    #             "created_at": "2024-03-13T10:00:00"
+    #         }
+    #     }
+
     class Config:
         orm_mode = True
         json_schema_extra = {

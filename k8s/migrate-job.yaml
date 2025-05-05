@@ -1,0 +1,47 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mongo-postgres-migration
+spec:
+  parallelism: 1
+  completions: 1
+  backoffLimit: 3
+  template:
+    spec:
+      containers:
+        - name: migrator
+          image: gcr.io/your-project/mongo-migrator:latest
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          env:
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: migration-secrets
+                  key: mongo-uri
+            - name: PG_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: migration-secrets
+                  key: pg-host
+            - name: PG_DB
+              valueFrom:
+                secretKeyRef:
+                  name: migration-secrets
+                  key: pg-database
+            - name: PG_USER
+              valueFrom:
+                secretKeyRef:
+                  name: migration-secrets
+                  key: pg-user
+            - name: PG_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: migration-secrets
+                  key: pg-password
+      restartPolicy: OnFailure

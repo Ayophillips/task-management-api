@@ -66,10 +66,24 @@ class TaskUpdate(BaseModel):
         }
 
 class TaskResponse(TaskBase):
+    
+    # id: str = Field(..., alias="_id")
+    # user_id: str
+    # created_at: datetime.datetime
+    # updated_at: datetime.datetime
+
+    # class Config:
+    #     allow_population_by_field_name = True
+    #     json_encoders = {
+    #         datetime.datetime: lambda v: v.isoformat()
+    #     }
+    
     id: int = Field(..., description="Unique task identifier")
     user_id: int = Field(..., description="ID of the task owner")
     created_at: datetime.datetime = Field(..., description="Task creation timestamp")
     updated_at: datetime.datetime = Field(..., description="Last update timestamp")
+    
+    
     
     class Config:
         from_attributes = True

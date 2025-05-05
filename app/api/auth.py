@@ -22,6 +22,22 @@ router = APIRouter(tags=["Authentication"])
 @router.post("/register", response_model=UserResponse)
 def register_user(user: UserCreate, session: Session = Depends(get_session)):
     # Check if user with this email or username already exists
+
+    # existing_user = await User.find_one({
+    #     "$or": [
+    #         {"email": user.email},
+    #         {"username": user.username}
+    #     ]
+    # })
+    
+    # if existing_user:
+    #     if existing_user.email == user.email:
+    #         logger.warning(f"Registration attempt with existing email: {user.email}")
+    #         raise HTTPException(status_code=400, detail="Email already registered")
+    #     else:
+    #         raise HTTPException(status_code=400, detail="Username already registered")
+    
+
     db_user = session.exec(select(User).where(User.email == user.email)).first()
     if db_user:
         logger.warning(f"Registration attempt with existing email: {user.email}")
@@ -42,6 +58,8 @@ def register_user(user: UserCreate, session: Session = Depends(get_session)):
     session.add(db_user)
     session.commit()
     session.refresh(db_user)
+
+    # await db_user.insert()
     
     logger.info(f"Successfully registered new user: {user.username}")
     return db_user

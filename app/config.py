@@ -6,6 +6,10 @@ load_dotenv()
 class Settings:
     PROJECT_NAME: str = "Task Management API"
     PROJECT_VERSION: str = "1.0.0"
+
+    # MongoDB settings
+    # MONGODB_URL: str = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
+    # MONGODB_DB_NAME: str = os.getenv("MONGODB_DB_NAME", "task_management")
     
     POSTGRES_USER: str = os.getenv("POSTGRES_USER", "postgres")
     POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "postgres")

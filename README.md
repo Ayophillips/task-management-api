@@ -1,185 +1,153 @@
 # Task Management API
 
-A RESTful API for a Task Management System built with FastAPI and SQLModel, deployed on Render with Supabase PostgreSQL database.
+A RESTful API for a Task Management System built with FastAPI, initially using MongoDB and later migrated to PostgreSQL, deployed on Google Kubernetes Engine (GKE).
 
 ## Features
 
-- User authentication with JWT
-- CRUD operations for tasks
-- Input validation and error handling
-- Database integration with PostgreSQL
-- API documentation with Swagger UI
-- Health check endpoint
-- Deployment on Render
-- Database hosting on Supabase
-- SSL-enabled secure connections
-- Comprehensive error handling
-- Logging system
+[...existing features...]
+- Database migration support (MongoDB to PostgreSQL)
+- Kubernetes deployment
+- Google Cloud Platform integration
+- Container orchestration with GKE
 
 ## Tech Stack
 
-- **Backend**: FastAPI 0.100.0+ with SQLModel
-- **Database**: PostgreSQL 15+ (hosted on Supabase)
+- **Backend**: FastAPI 0.100.0+
+- **Database**: 
+  - PostgreSQL 15+ (primary database)
+  - MongoDB (legacy data source)
 - **Authentication**: JWT tokens
 - **Documentation**: Swagger UI (built-in with FastAPI)
-- **Deployment**: Render
-- **Database Hosting**: Supabase
+- **Container Orchestration**: Kubernetes (GKE)
+- **Container Registry**: Google Container Registry (GCR)
 - **SSL**: TLS 1.3
 
-## Local Development Setup
+[...existing Prerequisites and Installation sections...]
 
-### Prerequisites
+## Database Migration
 
-- Python 3.8+
-- PostgreSQL 14+ (local instance for development)
-- Git
+### MongoDB to PostgreSQL Migration
 
-### Installation
-
-1. Clone the repository:
+1. Build the migration container:
 ```bash
-git clone https://github.com/yourusername/task-management-api.git
-cd task-management-api
+cd migration
+docker build -t gcr.io/your-project/mongo-migrator:latest .
+docker push gcr.io/your-project/mongo-migrator:latest
 ```
 
-2. Create a virtual environment:
+2. Create Kubernetes secrets for database credentials:
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+kubectl create secret generic migration-secrets \
+  --from-literal=mongo-uri='mongodb+srv://user:pass@cluster.mongodb.net' \
+  --from-literal=pg-host='postgres-service' \
+  --from-literal=pg-database='task_management' \
+  --from-literal=pg-user='postgres' \
+  --from-literal=pg-password='your-password'
 ```
 
-3. Install dependencies:
+3. Run the migration job:
 ```bash
-pip install -r requirements.txt
+kubectl apply -f k8s/migrate-job.yaml
 ```
 
-4. Set up environment variables:
+4. Monitor migration progress:
 ```bash
-cp .env.example .env
+kubectl logs -f job/mongo-postgres-migration
 ```
-
-5. Update `.env` with your settings:
-```ini
-# App settings
-PROJECT_NAME="Task Management API"
-PROJECT_VERSION="1.0.0"
-DEBUG=True
-
-# Database settings
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-POSTGRES_SERVER=localhost
-POSTGRES_PORT=5432
-POSTGRES_DB=task_management
-
-# Security
-SECRET_KEY=your-secret-key
-```
-
-6. Start the application:
-```bash
-uvicorn app.main:app --reload
-```
-
-7. Access the API documentation at `http://localhost:8000/docs`
 
 ## Production Deployment
 
-### Supabase Database Setup
+### Google Kubernetes Engine (GKE) Deployment
 
-1. Create a Supabase account at https://supabase.com
-2. Create a new project
-3. Get your database credentials from Settings > Database
-4. Note your connection string:
+1. Set up Google Cloud project and enable required APIs:
+```bash
+gcloud projects create your-project-id
+gcloud config set project your-project-id
+gcloud services enable container.googleapis.com
 ```
-postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:5432/postgres
+
+2. Create GKE cluster:
+```bash
+gcloud container clusters create task-mgmt-cluster \
+  --num-nodes=3 \
+  --machine-type=e2-standard-2 \
+  --region=us-central1
 ```
 
-### Render Deployment
+3. Build and push container image:
+```bash
+docker build -t gcr.io/your-project/task-mgmt-api:latest .
+docker push gcr.io/your-project/task-mgmt-api:latest
+```
 
-1. Create a Render account at https://render.com
-2. Connect your GitHub repository
-3. Create a new Web Service
-4. Configure the following:
-   - Build Command: `pip install -r requirements.txt`
-   - Start Command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-   
-5. Add environment variables:
-```ini
-POSTGRES_USER=postgres.[PROJECT_REF]
-POSTGRES_PASSWORD=your-supabase-password
-POSTGRES_SERVER=aws-0-[REGION].pooler.supabase.com
-POSTGRES_PORT=5432
-POSTGRES_DB=postgres
-SECRET_KEY=your-production-secret-key
+4. Deploy PostgreSQL database:
+```bash
+kubectl apply -f k8s/postgres-pvc.yaml
+kubectl apply -f k8s/postgres-deployment.yaml
+kubectl apply -f k8s/postgres-service.yaml
+```
+
+5. Create database secrets:
+```bash
+kubectl create secret generic db-secrets \
+  --from-literal=username=postgres \
+  --from-literal=password=your-secure-password
+```
+
+6. Deploy the application:
+```bash
+kubectl apply -f k8s/deployment.yaml
+kubectl apply -f k8s/service.yaml
+```
+
+7. Get the external IP:
+```bash
+kubectl get service task-api-service
 ```
 
 ### Verifying Deployment
 
-1. Check the health endpoint:
+1. Check deployment status:
 ```bash
-curl https://your-app-name.onrender.com/health
+kubectl get deployments
+kubectl get pods
+kubectl get services
 ```
 
-2. Monitor logs in Render dashboard
-
-## API Endpoints
-
-### Authentication
-- `POST /register` - Register a new user
-- `POST /token` - Login and get access token
-- `GET /users/me` - Get current user information
-
-### Tasks
-- `GET /tasks` - Get all tasks (with filtering)
-- `POST /tasks` - Create a new task
-- `GET /tasks/{task_id}` - Get a specific task
-- `PUT /tasks/{task_id}` - Update a task
-- `DELETE /tasks/{task_id}` - Delete a task
-
-### System
-- `GET /health` - Check system health
-- `GET /` - API information
-
-## Database Schema
-
-### User Model
-- `id`: Integer (primary key)
-- `email`: String (unique)
-- `username`: String (unique)
-- `hashed_password`: String
-- `is_active`: Boolean
-- `created_at`: DateTime
-
-### Task Model
-- `id`: Integer (primary key)
-- `title`: String (unique per user)
-- `description`: String (optional)
-- `due_date`: Date
-- `priority`: Enum (Low/Medium/High)
-- `status`: Enum (Pending/Completed)
-- `created_at`: DateTime
-- `updated_at`: DateTime
-- `user_id`: Integer (foreign key)
-
-## Testing
-
-Run the test suite:
+2. Check application health:
 ```bash
-pytest
+curl http://<EXTERNAL-IP>/health
 ```
 
-Run with coverage:
+3. Monitor logs:
 ```bash
-pytest --cov=app tests/
+kubectl logs -f deployment/task-api
 ```
 
-## Monitoring
+### Scaling
+
+Scale the deployment:
+```bash
+kubectl scale deployment task-api --replicas=3
+```
+
+### Monitoring
 
 - Health checks available at `/health`
-- Logs available in Render dashboard
-- Database metrics in Supabase dashboard
+- Kubernetes dashboard metrics
+- Google Cloud Monitoring
+- Google Cloud Logging
 
-## License
+## Infrastructure Layout
 
-This project is licensed under the MIT License.
+```
+k8s/
+├── deployment.yaml      # Main application deployment
+├── service.yaml        # Load balancer service
+├── postgres-pvc.yaml   # Persistent volume claim for PostgreSQL
+├── postgres-deployment.yaml  # PostgreSQL deployment
+├── postgres-service.yaml    # PostgreSQL service
+└── migrate-job.yaml    # Database migration job
+```
+
+[...rest of the existing sections...]

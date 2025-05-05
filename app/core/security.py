@@ -49,6 +49,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), session: Session
         logger.warning("Invalid JWT token")
         raise credentials_exception
     
+    # user = await User.find_one({"username": token_data.username})
     user = session.exec(select(User).where(User.username == token_data.username)).first()
     if user is None:
         logger.warning(f"User not found: {token_data.username}")
