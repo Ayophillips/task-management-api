@@ -1,9 +1,29 @@
 from sqlmodel import SQLModel, Field, Relationship
 from typing import Optional
+# from beanie import Document, Link
+# from pydantic import EmailStr
 import datetime
 from datetime import date
 from app.models.enums import PriorityEnum, StatusEnum
 from sqlalchemy import UniqueConstraint
+
+# class Task(Document):
+#     title: str
+#     description: Optional[str] = None
+#     due_date: date
+#     priority: PriorityEnum = PriorityEnum.MEDIUM
+#     status: StatusEnum = StatusEnum.PENDING
+#     created_at: datetime.datetime = datetime.datetime.now()
+#     updated_at: datetime.datetime = datetime.datetime.now()
+    
+#     user_id: str
+    
+#     class Settings:
+#         name = "tasks"
+#         indexes = [
+#             "title",
+#             "user_id"
+#         ]
 
 class Task(SQLModel, table=True):
     __tablename__ = "tasks"

@@ -4,7 +4,7 @@ from typing import List, Optional
 import datetime
 from datetime import date
 import logging
-
+# from beanie import PydanticObjectId
 from app.database import get_session
 from app.models.task import Task, PriorityEnum, StatusEnum
 from app.models.user import User
@@ -31,6 +31,15 @@ def create_task(
     - **status**: Optional. Task status (Pending/Completed)
     """
     logger.info(f"Creating new task: {task.title} for user: {current_user.username}")
+    
+    # db_task = Task(
+    #     **task.dict(),
+    #     user_id=str(current_user.id)
+    # )
+    
+    # await db_task.insert()
+    # return db_task
+    
     db_task = Task(
         **task.dict(),
         user_id=current_user.id
@@ -45,8 +54,8 @@ def create_task(
 
 @router.get("/", response_model=List[TaskResponse])
 def get_tasks(
-    skip: int = 5,
-    limit: int = 100,
+    skip: int = 0,
+    limit: int = 50,
     title: Optional[str] = None,
     description: Optional[str] = None,
     due_date: Optional[date] = None,
@@ -61,6 +70,18 @@ def get_tasks(
     Supports filtering by title, status, and priority.
     """
     logger.info(f"Fetching tasks for user: {current_user.username} with filters: title={title}, status={status}, priority={priority}")
+
+    # query = {"user_id": str(current_user.id)}
+    
+    # if title:
+    #     query["title"] = {"$regex": title, "$options": "i"}
+    # if status:
+    #     query["status"] = status
+    # if priority:
+    #     query["priority"] = priority
+        
+    # tasks = await Task.find(query).skip(skip).limit(limit).to_list()
+
     query = select(Task).where(Task.user_id == current_user.id)
     
     # Apply filters if provided
@@ -92,6 +113,12 @@ def get_task(
     Get a specific task by its ID.
     """
     logger.info(f"Fetching task_id={task_id} for user_id={current_user.id}")
+    
+    #  task = await Task.find_one({
+    #     "_id": task_id,
+    #     "user_id": str(current_user.id)
+    # })
+
     task = session.exec(select(Task).where(Task.id == task_id, Task.user_id == current_user.id)).first()
     
     if not task:
@@ -115,11 +142,24 @@ def update_task(
     Only provide the fields you want to update.
     """
     logger.info(f"Updating task {task_id} for user: {current_user.username}")
+    
+    # task = await Task.find_one({
+    #     "_id": task_id,
+    #     "user_id": str(current_user.id)
+    # })
+    
     db_task = session.exec(select(Task).where(Task.id == task_id, Task.user_id == current_user.id)).first()
     
     if not db_task:
         raise HTTPException(status_code=404, detail="Task not found")
     
+    # update_data = task_update.dict(exclude_unset=True)
+    # if update_data:
+    #     await task.update({"$set": update_data})
+    
+    # logger.info(f"Task {task_id} updated successfully")
+    # return task
+
     # Update only the provided fields
     task_data = task_update.dict(exclude_unset=True)
     
@@ -146,6 +186,17 @@ def delete_task(
     Delete a specific task by its ID.
     """
     logger.info(f"Deleting task {task_id} for user: {current_user.username}")
+    
+    # delete_result = await Task.find_one({
+    #     "_id": task_id,
+    #     "user_id": str(current_user.id)
+    # }).delete()
+    
+    # if not delete_result:
+    #     raise HTTPException(status_code=404, detail="Task not found")
+    
+    # logger.info(f"Task {task_id} deleted successfully")
+    
     db_task = session.exec(select(Task).where(Task.id == task_id, Task.user_id == current_user.id)).first()
     
     if not db_task:

@@ -9,6 +9,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlmodel import Session, select
 
 from app.database import create_db_and_tables, get_session
+# from app.mongodbsetup import init_mongodb, close_mongodb_connection
 from app.api import auth, tasks
 from app.config import settings
 from app.core.errors import ErrorHandlers
@@ -29,6 +30,18 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down application")
 
 app = FastAPI(title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION, lifespan=lifespan)
+
+# @asynccontextmanager
+# async def lifespan(app: FastAPI):
+#     # Startup
+#     logger.info("Starting up application")
+#     await init_mongodb()
+    
+#     yield
+    
+#     # Shutdown
+#     logger.info("Shutting down application")
+#     await close_mongodb_connection()
 
 app.add_middleware(
     CORSMiddleware,
@@ -88,24 +101,33 @@ async def health_check(session: Session = Depends(get_session)):
     try:
         # Test database connection
         session.exec(select(1)).first()
+        db_status = "connected"
+        error = None
     except Exception as e:
-        error_message = str(e)
-        logger.error(f"Database health check failed: {error_message}")
-        health_status.update({
-            "status": "unhealthy",
-            "database": {
-                "status": "unhealthy",
-                "error": error_message
-            }
-        })
+        db_status = "disconnected"
+        error = str(e)
+        logger.error(f"Database health check failed: {error}")
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            content=health_status
+            content={
+                "status": "unhealthy",
+                "database": {
+                    "status": db_status,
+                    "error": error
+                },
+                "version": settings.PROJECT_VERSION
+            }
         )
 
-    return health_status
+    return {
+        "status": "healthy",
+        "database": {
+            "status": db_status,
+            "error": error
+        },
+        "version": settings.PROJECT_VERSION
+    }
 
 if __name__ == "__main__":
     import uvicorn # type: ignore
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
-
